@@ -9,18 +9,26 @@
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
+            background-color: #f8f9fa;
         }
         .container {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
             gap: 20px;
-            padding: 20px;
+            padding: 40px;
         }
         .trash-bin {
             box-sizing: border-box;
-            padding: 10px;
-            border: 1px solid #ccc;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .trash-bin img.status-image {
+            width: 50px;
+            height: 150px;
+            margin-right: 10px;
         }
         .notification-icon {
             position: fixed;
@@ -60,6 +68,12 @@
         .notifications li {
             margin-bottom: 10px;
         }
+        .trash-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
         canvas {
             width: 100px;
             height: 100px;
@@ -67,7 +81,7 @@
     </style>
 </head>
 <body>
-    <h1>Trash Bin Status</h1>
+    <h1 style="text-align: center; padding: 20px 0;">Trash Bin Status</h1>
     <div class="notification-icon" onclick="toggleNotifications()">
         <i class="fas fa-bell"></i>
         <span class="notification-count" id="notificationCount">0</span>
@@ -77,67 +91,97 @@
     </div>
     <div class="container" id="trashStatusList"></div>
     <script>
-        // Fetch and display trash bin status
-        fetch('/api/trash-status')
-            .then(response => response.json())
-            .then(data => {
-                const list = document.getElementById('trashStatusList');
-                data.forEach((bin, index) => {
-                    const fillPercentage = (bin.fillLevel / bin.height) * 100;
-                    const listItem = document.createElement('div');
-                    listItem.className = 'trash-bin';
-                    listItem.innerHTML = `
-                        <h2>Bin ${bin.reference}</h2>
-                        <canvas id="chart${index}" width="100" height="100"></canvas>
-                        <p>(Longitude: ${bin.longitude}, Latitude: ${bin.latitude})</p>
-                    `;
-                    list.appendChild(listItem);
+        // Function to fetch and display trash bin status
+        function fetchTrashStatus() {
+            fetch('/api/trash-data')
+                .then(response => response.json())
+                .then(data => {
+                    const list = document.getElementById('trashStatusList');
+                    list.innerHTML = ''; // Clear the list before repopulating
+                    data.forEach((bin, index) => {
+                        const fillPercentage = (bin.fillLevel / bin.height) * 100;
+                        let statusImage = '';
 
-                    const ctx = document.getElementById(`chart${index}`).getContext('2d');
-                    new Chart(ctx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: ['Filled', 'Empty'],
-                            datasets: [{
-                                data: [fillPercentage, 100 - fillPercentage],
-                                backgroundColor: ['#FF6384', '#DDDDDD']
-                            }]
-                        },
-                        options: {
-                            responsive: false,
-                            maintainAspectRatio: false
+                        if (fillPercentage < 50) {
+                            statusImage = 'images/empty.png';
+                        } else if (fillPercentage < 100) {
+                            statusImage = 'images/half-full.png';
+                        } else {
+                            statusImage = 'images/full.png';
                         }
+
+                        const listItem = document.createElement('div');
+                        listItem.className = 'trash-bin';
+                        listItem.innerHTML = `
+                            <h2>Bin ${bin.reference}</h2>
+                            <div class="trash-status">
+                                <img src="${statusImage}" alt="Trash Bin Status" class="status-image">
+                                <canvas id="chart${index}" width="100" height="100"></canvas>
+                            </div>
+                            <p>Address: ${bin.address}</p>
+                            <p>Updated At: ${new Date(bin.updatedAt).toLocaleString()}</p>
+                            <p>(Longitude: ${bin.longitude}, Latitude: ${bin.latitude})</p>
+                        `;
+                        list.appendChild(listItem);
+
+                        const ctx = document.getElementById(`chart${index}`).getContext('2d');
+                        new Chart(ctx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['Filled', 'Empty'],
+                                datasets: [{
+                                    data: [fillPercentage, 100 - fillPercentage],
+                                    backgroundColor: ['#FF6384', '#DDDDDD']
+                                }]
+                            },
+                            options: {
+                                responsive: false,
+                                maintainAspectRatio: false
+                            }
+                        });
                     });
-                });
-            })
-            .catch(error => console.error('Error fetching data:', error));
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
 
-        // Fetch and display notifications
-        fetch('/api/notifications')
-            .then(response => response.json())
-            .then(data => {
-                const notificationCount = document.getElementById('notificationCount');
-                notificationCount.textContent =                notificationCount.textContent = data.length;
+        // Function to fetch and display notifications
+        function fetchNotifications() {
+            fetch('/api/notifications')
+                .then(response => response.json())
+                .then(data => {
+                    const notificationCount = document.getElementById('notificationCount');
+                    notificationCount.textContent = data.length;
 
-const list = document.getElementById('notificationList');
-list.innerHTML = ''; // Clear previous notifications
-data.forEach(notification => {
-    const listItem = document.createElement('li');
-    listItem.textContent = notification.message;
-    list.appendChild(listItem);
-});
-})
-.catch(error => console.error('Error fetching notifications:', error));
+                    const list = document.getElementById('notificationList');
+                    list.innerHTML = ''; // Clear previous notifications
+                    data.forEach(notification => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = notification.message;
+                        list.appendChild(listItem);
+                    });
+                })
+                .catch(error => console.error('Error fetching notifications:', error));
+        }
 
-function toggleNotifications() {
-const notifications = document.getElementById('notifications');
-if (notifications.style.display === 'none' || notifications.style.display === '') {
-notifications.style.display = 'block';
-} else {
-notifications.style.display = 'none';
-}
-}
-</script>
+        // Function to toggle the display of notifications
+        function toggleNotifications() {
+            const notifications = document.getElementById('notifications');
+            if (notifications.style.display === 'none' || notifications.style.display === '') {
+                notifications.style.display = 'block';
+            } else {
+                notifications.style.display = 'none';
+            }
+        }
+
+        // Initial fetch of data
+        fetchTrashStatus();
+        fetchNotifications();
+
+        // Set interval to refresh data every 5 seconds
+        setInterval(() => {
+            fetchTrashStatus();
+            fetchNotifications();
+        }, 5000);
+    </script>
 </body>
 </html>
-
