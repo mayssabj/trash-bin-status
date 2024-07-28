@@ -8,12 +8,12 @@
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 70px;
+            padding: 90px;
             background-color: #f8f9fa;
         }
         .trash-bin {
             box-sizing: border-box;
-            padding: 30px;
+            padding: 20px;
             background: white;
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
@@ -23,7 +23,7 @@
         }
         .trash-bin img.status-image {
             width: 80px;
-            height: 170px;
+            height: 180px;
             margin-right: 10px;
         }
         .trash-status {
@@ -48,8 +48,6 @@
             fetch(`/api/trash-data/${reference}`)
                 .then(response => response.json())
                 .then(bin => {
-                    console.log('Fetched bin details:', bin); // Log fetched details for debugging
-
                     const fillPercentage = (bin.fillLevel / bin.height) * 100;
                     let statusImage = '';
 
@@ -70,7 +68,7 @@
                         </div>
                         <p>Address: ${bin.address}</p>
                         <p>Updated At: ${new Date(bin.updatedAt).toLocaleString()}</p>
-                        
+                        <p>(Longitude: ${bin.longitude}, Latitude: ${bin.latitude})</p>
                     `;
 
                     const ctx = document.getElementById('chart').getContext('2d');

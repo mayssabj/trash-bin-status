@@ -78,6 +78,22 @@
             width: 100px;
             height: 100px;
         }
+        .filter-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .filter-container button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+        }
+        .filter-container button.active {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
@@ -89,59 +105,100 @@
             <ul id="notificationList"></ul>
         </div>
     </div>
+    <div class="filter-container">
+        <button onclick="filterBins('all')" id="filter-all" class="active">All</button>
+        <button onclick="filterBins('empty')" id="filter-empty">Empty</button>
+        <button onclick="filterBins('half-full')" id="filter-half-full">Half Full</button>
+        <button onclick="filterBins('full')" id="filter-full">Full</button>
+    </div>
     <div class="container" id="trashStatusList"></div>
     <script>
+        let allBins = [];
+        let currentFilter = 'all';
+
         // Function to fetch and display trash bin status
         function fetchTrashStatus() {
             fetch('/api/trash-data')
                 .then(response => response.json())
                 .then(data => {
-                    const list = document.getElementById('trashStatusList');
-                    list.innerHTML = ''; // Clear the list before repopulating
-                    data.forEach((bin, index) => {
-                        const fillPercentage = (bin.fillLevel / bin.height) * 100;
-                        let statusImage = '';
-
-                        if (fillPercentage < 50) {
-                            statusImage = 'images/empty.png';
-                        } else if (fillPercentage < 100) {
-                            statusImage = 'images/half-full.png';
-                        } else {
-                            statusImage = 'images/full.png';
-                        }
-
-                        const listItem = document.createElement('div');
-                        listItem.className = 'trash-bin';
-                        listItem.innerHTML = `
-                            <h2>Bin ${bin.reference}</h2>
-                            <div class="trash-status">
-                                <img src="${statusImage}" alt="Trash Bin Status" class="status-image">
-                                <canvas id="chart${index}" width="100" height="100"></canvas>
-                            </div>
-                            <p>Address: ${bin.address}</p>
-                            <p>Updated At: ${new Date(bin.updatedAt).toLocaleString()}</p>
-                            <p>(Longitude: ${bin.longitude}, Latitude: ${bin.latitude})</p>
-                        `;
-                        list.appendChild(listItem);
-
-                        const ctx = document.getElementById(`chart${index}`).getContext('2d');
-                        new Chart(ctx, {
-                            type: 'doughnut',
-                            data: {
-                                labels: ['Filled', 'Empty'],
-                                datasets: [{
-                                    data: [fillPercentage, 100 - fillPercentage],
-                                    backgroundColor: ['#FF6384', '#DDDDDD']
-                                }]
-                            },
-                            options: {
-                                responsive: false,
-                                maintainAspectRatio: false
-                            }
-                        });
-                    });
+                    allBins = data;
+                    applyFilter();
                 })
                 .catch(error => console.error('Error fetching data:', error));
+        }
+
+        function displayBins(bins) {
+            const list = document.getElementById('trashStatusList');
+            list.innerHTML = ''; // Clear the list before repopulating
+            bins.forEach((bin, index) => {
+                const fillPercentage = (bin.fillLevel / bin.height) * 100;
+                let statusImage = '';
+
+                if (fillPercentage < 50) {
+                    statusImage = 'images/empty.png';
+                } else if (fillPercentage < 100) {
+                    statusImage = 'images/half-full.png';
+                } else {
+                    statusImage = 'images/full.png';
+                }
+
+                const listItem = document.createElement('div');
+                listItem.className = 'trash-bin';
+                listItem.innerHTML = `
+                    <h2>Bin ${bin.reference}</h2>
+                    <div class="trash-status">
+                        <img src="${statusImage}" alt="Trash Bin Status" class="status-image">
+                        <canvas id="chart${index}" width="100" height="100"></canvas>
+                    </div>
+                    <p>Address: ${bin.address}</p>
+                    <p>Updated At: ${new Date(bin.updatedAt).toLocaleString()}</p>
+                    <p>(Longitude: ${bin.longitude}, Latitude: ${bin.latitude})</p>
+                `;
+                list.appendChild(listItem);
+
+                const ctx = document.getElementById(`chart${index}`).getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Filled', 'Empty'],
+                        datasets: [{
+                            data: [fillPercentage, 100 - fillPercentage],
+                            backgroundColor: ['#FF6384', '#DDDDDD']
+                        }]
+                    },
+                    options: {
+                        responsive: false,
+                        maintainAspectRatio: false
+                    }
+                });
+            });
+        }
+
+        function filterBins(status) {
+            currentFilter = status;
+            applyFilter();
+
+            // Update active button
+            document.querySelectorAll('.filter-container button').forEach(button => button.classList.remove('active'));
+            document.getElementById(`filter-${status}`).classList.add('active');
+        }
+
+        function applyFilter() {
+            let filteredBins = [];
+            switch (currentFilter) {
+                case 'empty':
+                    filteredBins = allBins.filter(bin => (bin.fillLevel / bin.height) * 100 < 50);
+                    break;
+                case 'half-full':
+                    filteredBins = allBins.filter(bin => (bin.fillLevel / bin.height) * 100 >= 50 && (bin.fillLevel / bin.height) * 100 < 100);
+                    break;
+                case 'full':
+                    filteredBins = allBins.filter(bin => (bin.fillLevel / bin.height) * 100 === 100);
+                    break;
+                default:
+                    filteredBins = allBins;
+            }
+            displayBins(filteredBins);
         }
 
         // Function to fetch and display notifications
@@ -177,11 +234,11 @@
         fetchTrashStatus();
         fetchNotifications();
 
-        // Set interval to refresh data every 5 seconds
+        // Set interval to refresh data every 10 seconds
         setInterval(() => {
             fetchTrashStatus();
             fetchNotifications();
-        }, 5000);
+        }, 10000); // 10 seconds
     </script>
 </body>
 </html>
