@@ -44,6 +44,6 @@ app.get('/', (req, res) => {
 require('./routes/trashBin.routes.js')(app);
 
 // listen for requests
-app.listen(3000, () => {
+app.listen(3000,'127.0.0.1' , () => {
   console.log("Server is listening on port 3000");
 });

@@ -119,12 +119,31 @@
     </div>
     <div class="container" id="trashStatusList"></div>
     <script>
+         // Create a request variable and assign a new XMLHttpRequest object to it.
+        var request = new XMLHttpRequest();
+
+        // Open a new connection, using the GET request on the URL endpoint
+        request.open("GET", "http://127.0.0.1:3000/trash-data", true);
+
+        // Send the request
+        request.send();
+
+        // Handle the response
+        request.onload = function() {
+            if (request.status >= 200 && request.status < 400) {
+                // Success!
+                console.log("Server response:", request.responseText);
+            } else {
+                // Error from server
+                console.error("Error in response:", request.statusText);
+            }
+        };
         let allBins = [];
         let currentFilter = 'all';
 
         // Function to fetch and display trash bin status
         function fetchTrashStatus() {
-            fetch('/api/trash-data')
+            fetch('/trash-data')
                 .then(response => response.json())
                 .then(data => {
                     allBins = data;
@@ -225,7 +244,7 @@
 
         // Function to fetch and display notifications
         function fetchNotifications() {
-            fetch('/api/notifications')
+            fetch('/notifications')
                 .then(response => response.json())
                 .then(data => {
                     const notificationCount = document.getElementById('notificationCount');

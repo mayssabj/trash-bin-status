@@ -45,7 +45,7 @@
 
         // Function to fetch and display trash bin details
         function fetchTrashBinDetails() {
-            fetch(`/api/trash-data/${reference}`)
+            fetch(`/trash-data/${reference}`)
                 .then(response => response.json())
                 .then(bin => {
                     const fillPercentage = (bin.fillLevel / bin.height) * 100;

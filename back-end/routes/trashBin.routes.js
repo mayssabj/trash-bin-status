@@ -4,14 +4,17 @@ const TrashBin = require('../models/trashBin.model.js');
 const path = require('path');
 
 module.exports = (app) => {
-    // Create or update a TrashBin
-    app.post('/api/trash-data', trashBins.createOrUpdate);
+     // Create a new TrashBin
+     app.post('/trash-data', trashBins.create);
+
+     // Update an existing TrashBin
+     app.put('/trash-data/:reference', trashBins.update);
 
     // Retrieve all TrashBins (limit to 3)
-    app.get('/api/trash-data', trashBins.findAll);
+    app.get('/trash-data', trashBins.findAll);
 
     // Retrieve all Notifications
-    app.get('/api/notifications', (req, res) => {
+    app.get('/notifications', (req, res) => {
         Notification.find().sort({ timestamp: -1 }).then(notifications => {
             res.json(notifications);
         }).catch(err => res.status(500).send('Failed to retrieve notifications'));
@@ -22,8 +25,8 @@ module.exports = (app) => {
         res.sendFile(path.join(__dirname, '../../front-end/public/bin-details.html')); 
     });
     
-    app.get('/api/trash-data/:reference', trashBins.findOne);
+    app.get('/trash-data/:reference', trashBins.findOne);
 
     // Delete a TrashBin and corresponding notifications
-    app.delete('/api/trash-data/:reference', trashBins.delete);
+    app.delete('/trash-data/:reference', trashBins.delete);
 };
